@@ -631,17 +631,18 @@
         `;
       }
 
-      // Recuadro de placa colombiana con centrado exacto vertical y horizontal en PDF
+      // Recuadro de placa colombiana vectorial (SVG) para visibilidad y centrado exacto en TODOS los PDF
       function buildPdfPlateBoxHTML(plateText) {
-        const cleanPlate = escapeHTML((plateText || 'SIN PLACA').toUpperCase());
+        const rawPlate = String(plateText || 'SIN PLACA').trim().toUpperCase() || 'SIN PLACA';
+        const cleanPlate = escapeHTML(rawPlate);
+        const boxWidth = Math.max(106, rawPlate.length * 13 + 26);
+        const centerX = (boxWidth / 2) + 1;
+
         return `
-          <table cellpadding="0" cellspacing="0" border="0" style="display:inline-table; border-collapse:separate; border-spacing:0; background:#FCD116; border:2.5px solid #13294B; border-radius:7px; height:34px;">
-            <tr>
-              <td align="center" valign="middle" style="height:29px; padding:0 12px 3px 14px; font-family:'Montserrat',Arial,sans-serif; font-weight:800; font-size:14.5px; line-height:1; letter-spacing:2px; color:#13294B; text-align:center; vertical-align:middle; white-space:nowrap;">
-                ${cleanPlate}
-              </td>
-            </tr>
-          </table>
+          <svg width="${boxWidth}" height="34" viewBox="0 0 ${boxWidth} 34" xmlns="http://www.w3.org/2000/svg" style="display:inline-block; vertical-align:middle; overflow:visible;">
+            <rect x="1.5" y="1.5" width="${boxWidth - 3}" height="31" rx="6.5" ry="6.5" fill="#FCD116" stroke="#13294B" stroke-width="2.5" />
+            <text x="${centerX}" y="17" dy="0.36em" fill="#13294B" font-family="Montserrat, Arial, sans-serif" font-weight="800" font-size="14.5" letter-spacing="2" text-anchor="middle">${cleanPlate}</text>
+          </svg>
         `;
       }
 
