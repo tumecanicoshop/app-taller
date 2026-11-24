@@ -2048,6 +2048,14 @@
                     class="px-3.5 py-2 rounded-xl bg-white text-[#13294B] hover:bg-slate-100 font-display font-bold text-xs shadow transition">
                     Exportar Orden PDF
                   </button>
+                  <button type="button" id="btnPreviewAdminDoc"
+                    class="px-3.5 py-2 rounded-xl bg-amber-400 hover:bg-amber-300 text-[#13294B] font-display font-bold text-xs shadow transition">
+                    Vista Previa Informe Admin
+                  </button>
+                  <button type="button" id="btnDirectExportAdminPDF"
+                    class="px-3.5 py-2 rounded-xl bg-[#0C1B33] hover:bg-[#1E3A68] text-amber-300 border border-amber-400/40 font-display font-bold text-xs shadow transition">
+                    Informe Admin PDF
+                  </button>
                   <button type="button" data-jump-tab="quote"
                     class="px-3.5 py-2 rounded-xl bg-[#EB3C7D] hover:bg-[#F04E98] text-white font-display font-bold text-xs shadow transition">
                     Ir a Cotizar Servicio
@@ -2197,6 +2205,8 @@
 
         document.getElementById('btnPreviewOrderDoc')?.addEventListener('click', () => openDocumentPreviewModal('order', order));
         document.getElementById('btnDirectExportOrderPDF')?.addEventListener('click', () => exportDocumentPDFDirectly('order', order));
+        document.getElementById('btnPreviewAdminDoc')?.addEventListener('click', () => openDocumentPreviewModal('admin', order));
+        document.getElementById('btnDirectExportAdminPDF')?.addEventListener('click', () => exportDocumentPDFDirectly('admin', order));
       }
 
       /* =========================================================================
@@ -2430,6 +2440,17 @@
                     <span id="intGrandProfit" class="${fin.grandProfit < 0 ? 'text-[#EB3C7D]' : 'text-emerald-700'}">${formatCOP(fin.grandProfit)}</span>
                   </div>
                 </div>
+
+                <div class="pt-2 flex flex-wrap gap-2">
+                  <button type="button" id="btnQuotePreviewAdmin"
+                    class="flex-1 px-3 py-2 rounded-xl bg-[#F4F6F9] hover:bg-slate-200 text-[#13294B] border border-slate-200 font-display font-bold text-xs transition">
+                    Vista Previa Informe Admin
+                  </button>
+                  <button type="button" id="btnQuoteExportAdminPDF"
+                    class="flex-1 px-3 py-2 rounded-xl bg-[#13294B] hover:bg-[#1E3A68] text-amber-300 font-display font-bold text-xs shadow transition">
+                    Exportar Informe Admin PDF
+                  </button>
+                </div>
               </div>
 
               <!-- Liquidación Formal al Cliente (Desglose IVA 19%) -->
@@ -2575,6 +2596,8 @@
           syncQuotePartsToRequisition(order);
         });
 
+        document.getElementById('btnQuotePreviewAdmin')?.addEventListener('click', () => openDocumentPreviewModal('admin', order));
+        document.getElementById('btnQuoteExportAdminPDF')?.addEventListener('click', () => exportDocumentPDFDirectly('admin', order));
         document.getElementById('btnPreviewQuoteDoc')?.addEventListener('click', () => openDocumentPreviewModal('quote', order));
         document.getElementById('btnExportQuotePDF')?.addEventListener('click', () => exportDocumentPDFDirectly('quote', order));
         document.getElementById('btnSendQuoteWA')?.addEventListener('click', () => {
@@ -3372,6 +3395,239 @@
         `;
       }
 
+      // --- 0B. PLANTILLA INFORME ADMINISTRATIVO DE ORDEN DE SERVICIO (1 HOJA) ---
+      function buildAdminReportDocumentHTML(order) {
+        const fin = computeOrderFinancials(order);
+        const plate = (order.vehicle.plate || 'SIN PLACA').toUpperCase();
+        const marginPctStr = fin.partsMarginPct !== null ? fin.partsMarginPct.toFixed(1) + '%' : '—';
+        const marginColor = fin.isMarginAlert ? '#EB3C7D' : '#059669';
+        const marginBg = fin.isMarginAlert ? '#FFF1F2' : '#ECFDF5';
+        const marginBorder = fin.isMarginAlert ? '#FECDD3' : '#A7F3D0';
+
+        return `
+          <div style="width:794px; background:#FFFFFF; color:#2B2D42; font-family:'Inter',Arial,sans-serif; box-sizing:border-box;">
+            <!-- Encabezado Administrativo -->
+            <div class="pdf-avoid-break" style="background:#13294B; border-bottom:5px solid #EB3C7D; padding:16px 26px; color:#FFFFFF; display:flex; justify-content:space-between; align-items:center;">
+              <div>
+                ${getLogoSVG('dark', 195, 44)}
+                <div style="font-size:10px; color:#CBD5E1; margin-top:4px;">
+                  Cra 45 #75-19, Barranquilla · Control Interno Gerencial · www.tumecanico.shop
+                </div>
+              </div>
+              <div style="text-align:right;">
+                <div style="display:inline-block; background:#EB3C7D; color:#FFFFFF; font-family:'Montserrat',sans-serif; font-weight:800; font-size:9px; letter-spacing:0.06em; padding:2px 8px; border-radius:99px; margin-bottom:4px;">
+                  USO INTERNO · ADMINISTRATIVO
+                </div>
+                <div style="font-family:'Montserrat',sans-serif; font-weight:800; font-size:16px; color:#FCD116; letter-spacing:0.03em;">
+                  INFORME ADMINISTRATIVO DE ORDEN
+                </div>
+                <div style="font-family:'Montserrat',sans-serif; font-weight:700; font-size:12.5px; color:#FFFFFF; margin-top:2px;">
+                  ${escapeHTML(order.orderNumber)} · ${formatDateES(order.dateIn)} · ${escapeHTML(order.status)}
+                </div>
+              </div>
+            </div>
+
+            <div style="padding:16px 26px; display:flex; flex-direction:column; gap:12px;">
+              <!-- Ficha Cliente, Vehículo y Placa Centrada -->
+              <div class="pdf-avoid-break" style="background:#F4F6F9; border:1px solid #E9ECEF; border-radius:10px; padding:10px 14px; display:grid; grid-template-columns:1.25fr 1.1fr 0.65fr; gap:12px; font-size:11px; align-items:center;">
+                <div>
+                  <div style="font-size:9px; color:#EB3C7D; font-weight:800; text-transform:uppercase;">Cliente</div>
+                  <div style="font-weight:700; color:#13294B; font-size:12.5px; margin-top:1px;">${escapeHTML(order.client.name || '—')}</div>
+                  <div style="color:#475569;">CC/NIT: ${escapeHTML(order.client.docId || '—')} · Tel: ${escapeHTML(order.client.phone || '—')}</div>
+                </div>
+                <div style="border-left:1px solid #DDE2E7; padding-left:12px;">
+                  <div style="font-size:9px; color:#EB3C7D; font-weight:800; text-transform:uppercase;">Vehículo y Técnico</div>
+                  <div style="font-weight:700; color:#13294B; font-size:12.5px; margin-top:1px;">${escapeHTML(order.vehicle.brandLine || '—')} (${escapeHTML(order.vehicle.year || '—')})</div>
+                  <div style="color:#475569;">Km: <strong>${escapeHTML(order.vehicle.mileage || '—')}</strong> · Técnico: <strong>${escapeHTML(order.technician || '—')}</strong></div>
+                </div>
+                <div style="text-align:right;">
+                  <div style="font-size:9px; color:#EB3C7D; font-weight:800; text-transform:uppercase; margin-bottom:3px;">PLACA</div>
+                  ${buildPdfPlateBoxHTML(plate)}
+                </div>
+              </div>
+
+              <!-- 4 KPIs Ejecutivos en 1 fila -->
+              <div class="pdf-avoid-break" style="display:grid; grid-template-columns:repeat(4,1fr); gap:10px;">
+                <div style="background:#13294B; color:#FFFFFF; border-radius:10px; padding:10px 12px; border-bottom:3px solid #EB3C7D;">
+                  <div style="font-size:9px; font-weight:700; text-transform:uppercase; color:#FBCFE8;">Valor Trabajo (IVA inc.)</div>
+                  <div style="font-family:'Montserrat',sans-serif; font-weight:800; font-size:15.5px; color:#FCD116; margin-top:2px;">${formatCOP(fin.grandTotalSale)}</div>
+                  <div style="font-size:9.5px; color:#CBD5E1; margin-top:1px;">Base: ${formatCOP(fin.subtotalGeneralBeforeIva)} · IVA: ${formatCOP(fin.ivaAmount)}</div>
+                </div>
+                <div style="background:#F8FAFC; border:1px solid #E2E8F0; border-radius:10px; padding:10px 12px;">
+                  <div style="font-size:9px; font-weight:700; text-transform:uppercase; color:#64748B;">Mano de Obra (IVA inc.)</div>
+                  <div style="font-family:'Montserrat',sans-serif; font-weight:800; font-size:15px; color:#13294B; margin-top:2px;">${formatCOP(fin.laborTotalSale)}</div>
+                  <div style="font-size:9.5px; color:#64748B; margin-top:1px;">Base sin IVA: ${formatCOP(fin.subtotalLaborBeforeIva)}</div>
+                </div>
+                <div style="background:#F8FAFC; border:1px solid #E2E8F0; border-radius:10px; padding:10px 12px;">
+                  <div style="font-size:9px; font-weight:700; text-transform:uppercase; color:#64748B;">Venta Repuestos (IVA inc.)</div>
+                  <div style="font-family:'Montserrat',sans-serif; font-weight:800; font-size:15px; color:#13294B; margin-top:2px;">${formatCOP(fin.partsTotalSale)}</div>
+                  <div style="font-size:9.5px; color:#64748B; margin-top:1px;">Costo (IVA inc.): ${formatCOP(fin.partsTotalCost)}</div>
+                </div>
+                <div style="background:${marginBg}; border:1px solid ${marginBorder}; border-radius:10px; padding:10px 12px;">
+                  <div style="font-size:9px; font-weight:800; text-transform:uppercase; color:${marginColor};">Utilidad Bruta Repuestos</div>
+                  <div style="font-family:'Montserrat',sans-serif; font-weight:800; font-size:15px; color:${marginColor}; margin-top:2px;">${formatCOP(fin.partsProfit)}</div>
+                  <div style="font-size:9.5px; font-weight:700; color:${marginColor}; margin-top:1px;">Margen Bruto: ${marginPctStr}</div>
+                </div>
+              </div>
+
+              <!-- Tabla 1: Trabajos Realizados (Mano de Obra) -->
+              <div class="pdf-avoid-break">
+                <div style="font-family:'Montserrat',sans-serif; font-weight:800; font-size:11px; text-transform:uppercase; color:#13294B; margin-bottom:5px; display:flex; align-items:center; gap:6px;">
+                  <span style="width:7px; height:7px; border-radius:99px; background:#EB3C7D; display:inline-block;"></span>
+                  1. Trabajos Realizados (Mano de Obra)
+                </div>
+                <table style="width:100%; border-collapse:collapse; font-size:11px;">
+                  <thead>
+                    <tr style="background:#13294B; color:#FFFFFF; font-family:'Montserrat',sans-serif; font-size:9.5px; text-transform:uppercase;">
+                      <th style="padding:6px 8px; text-align:left;">Descripción del Trabajo</th>
+                      <th style="padding:6px; text-align:center; width:55px;">Horas</th>
+                      <th style="padding:6px 8px; text-align:right; width:115px;">Base (sin IVA)</th>
+                      <th style="padding:6px 8px; text-align:right; width:100px;">IVA (19%)</th>
+                      <th style="padding:6px 8px; text-align:right; width:125px;">Venta (IVA inc.)</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    ${fin.activeLabor.length === 0 ? `
+                      <tr><td colspan="5" style="padding:8px; text-align:center; color:#94A3B8; border-bottom:1px solid #E9ECEF;">Sin trabajos de mano de obra registrados.</td></tr>
+                    ` : fin.activeLabor.map((l, i) => {
+                      const baseVal = Math.round(l.saleBeforeIva);
+                      const ivaVal = Math.max(0, Math.round(l.salePrice) - baseVal);
+                      return `
+                        <tr style="background:${i % 2 === 0 ? '#FFFFFF' : '#F8FAFC'}; border-bottom:1px solid #E9ECEF;">
+                          <td style="padding:5px 8px; font-weight:600; color:#2B2D42;">${escapeHTML(l.description || 'Trabajo técnico')}</td>
+                          <td style="padding:5px 6px; text-align:center;">${l.hours} h</td>
+                          <td style="padding:5px 8px; text-align:right; color:#475569;">${formatCOP(baseVal)}</td>
+                          <td style="padding:5px 8px; text-align:right; color:#64748B;">${formatCOP(ivaVal)}</td>
+                          <td style="padding:5px 8px; text-align:right; font-weight:700; color:#13294B;">${formatCOP(l.salePrice)}</td>
+                        </tr>
+                      `;
+                    }).join('')}
+                  </tbody>
+                  <tfoot>
+                    <tr style="background:#F4F6F9; font-weight:700;">
+                      <td colspan="2" style="padding:6px 8px; text-align:right; color:#13294B;">Subtotal Mano de Obra:</td>
+                      <td style="padding:6px 8px; text-align:right; color:#475569;">${formatCOP(fin.subtotalLaborBeforeIva)}</td>
+                      <td style="padding:6px 8px; text-align:right; color:#64748B;">${formatCOP(Math.max(0, Math.round(fin.laborTotalSale) - fin.subtotalLaborBeforeIva))}</td>
+                      <td style="padding:6px 8px; text-align:right; font-family:'Montserrat',sans-serif; color:#13294B;">${formatCOP(fin.laborTotalSale)}</td>
+                    </tr>
+                  </tfoot>
+                </table>
+              </div>
+
+              <!-- Tabla 2: Repuestos Implementados (Costo, Venta, Utilidad Bruta y Margen %) -->
+              <div class="pdf-avoid-break">
+                <div style="font-family:'Montserrat',sans-serif; font-weight:800; font-size:11px; text-transform:uppercase; color:#13294B; margin-bottom:5px; display:flex; align-items:center; justify-content:space-between;">
+                  <span style="display:flex; align-items:center; gap:6px;">
+                    <span style="width:7px; height:7px; border-radius:99px; background:#13294B; display:inline-block;"></span>
+                    2. Repuestos Implementados — Costo, Venta y Margen Bruto (IVA Incluido)
+                  </span>
+                  <span style="font-size:10px; color:${marginColor};">Margen Bruto General Repuestos: ${marginPctStr}</span>
+                </div>
+                <table style="width:100%; border-collapse:collapse; font-size:11px;">
+                  <thead>
+                    <tr style="background:#13294B; color:#FFFFFF; font-family:'Montserrat',sans-serif; font-size:9.5px; text-transform:uppercase;">
+                      <th style="padding:6px 5px; text-align:center; width:42px;">Cant.</th>
+                      <th style="padding:6px 8px; text-align:left;">Repuesto / Referencia</th>
+                      <th style="padding:6px 8px; text-align:right; width:105px;">Costo Total</th>
+                      <th style="padding:6px 8px; text-align:right; width:105px;">Venta Total</th>
+                      <th style="padding:6px 8px; text-align:right; width:105px;">Utilidad Bruta</th>
+                      <th style="padding:6px 6px; text-align:center; width:72px;">Margen %</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    ${fin.activeParts.length === 0 ? `
+                      <tr><td colspan="6" style="padding:8px; text-align:center; color:#94A3B8; border-bottom:1px solid #E9ECEF;">Sin repuestos implementados en esta orden.</td></tr>
+                    ` : fin.activeParts.map((p, i) => {
+                      const rowMColor = (p.rowMarginPct !== null && p.rowMarginPct < 20) ? '#EB3C7D' : '#059669';
+                      return `
+                        <tr style="background:${i % 2 === 0 ? '#FFFFFF' : '#F8FAFC'}; border-bottom:1px solid #E9ECEF;">
+                          <td style="padding:5px; text-align:center; font-weight:700; color:#13294B;">${p.qty}</td>
+                          <td style="padding:5px 8px; font-weight:600; color:#2B2D42;">${escapeHTML(p.description || 'Repuesto')} ${p.brandRef ? `<span style="color:#64748B; font-weight:400;">(${escapeHTML(p.brandRef)})</span>` : ''}</td>
+                          <td style="padding:5px 8px; text-align:right; color:#475569;">${formatCOP(p.rowTotalCost)}</td>
+                          <td style="padding:5px 8px; text-align:right; font-weight:700; color:#13294B;">${formatCOP(p.rowTotalSale)}</td>
+                          <td style="padding:5px 8px; text-align:right; font-weight:700; color:${p.rowProfit < 0 ? '#EB3C7D' : '#059669'};">${formatCOP(p.rowProfit)}</td>
+                          <td style="padding:5px 6px; text-align:center; font-weight:800; color:${rowMColor};">${p.rowMarginPct !== null ? p.rowMarginPct.toFixed(1) + '%' : '—'}</td>
+                        </tr>
+                      `;
+                    }).join('')}
+                  </tbody>
+                  <tfoot>
+                    <tr style="background:#F4F6F9; font-weight:800;">
+                      <td colspan="2" style="padding:6px 8px; text-align:right; color:#13294B;">Total Repuestos Implementados:</td>
+                      <td style="padding:6px 8px; text-align:right; color:#475569;">${formatCOP(fin.partsTotalCost)}</td>
+                      <td style="padding:6px 8px; text-align:right; color:#13294B;">${formatCOP(fin.partsTotalSale)}</td>
+                      <td style="padding:6px 8px; text-align:right; color:${fin.partsProfit < 0 ? '#EB3C7D' : '#059669'};">${formatCOP(fin.partsProfit)}</td>
+                      <td style="padding:6px 6px; text-align:center; color:${marginColor};">${marginPctStr}</td>
+                    </tr>
+                  </tfoot>
+                </table>
+              </div>
+
+              <!-- Resumen Final Consolidado en 1 Hoja: Valor del Trabajo, IVA, Mano de Obra y Utilidad Bruta -->
+              <div class="pdf-avoid-break" style="display:grid; grid-template-columns:1fr 1fr; gap:12px; align-items:stretch;">
+                <!-- Bloque Izquierdo: Desglose Tributario y Valor del Trabajo -->
+                <div style="background:#F4F6F9; border:1px solid #E2E8F0; border-radius:10px; padding:11px 14px; font-size:11px; display:flex; flex-direction:column; justify-content:space-between;">
+                  <div>
+                    <div style="font-family:'Montserrat',sans-serif; font-weight:800; font-size:10.5px; color:#13294B; text-transform:uppercase; margin-bottom:6px; border-bottom:1px solid #CBD5E1; padding-bottom:4px;">
+                      Desglose de Valor del Trabajo e IVA (19%)
+                    </div>
+                    <div style="display:flex; justify-content:space-between; padding:3px 0; color:#475569;">
+                      <span>Mano de Obra (Base sin IVA):</span>
+                      <strong>${formatCOP(fin.subtotalLaborBeforeIva)}</strong>
+                    </div>
+                    <div style="display:flex; justify-content:space-between; padding:3px 0; color:#475569;">
+                      <span>Venta Repuestos (Base sin IVA):</span>
+                      <strong>${formatCOP(fin.subtotalPartsBeforeIva)}</strong>
+                    </div>
+                    <div style="display:flex; justify-content:space-between; padding:4px 0; margin-top:2px; border-top:1px dashed #CBD5E1; color:#13294B; font-weight:700;">
+                      <span>Subtotal Valor Trabajo (Antes de IVA):</span>
+                      <span>${formatCOP(fin.subtotalGeneralBeforeIva)}</span>
+                    </div>
+                    <div style="display:flex; justify-content:space-between; padding:3px 0; color:#475569;">
+                      <span>IVA Generado (19%):</span>
+                      <strong>${formatCOP(fin.ivaAmount)}</strong>
+                    </div>
+                  </div>
+                  <div style="background:#13294B; color:#FFFFFF; border-radius:8px; padding:8px 12px; margin-top:8px; display:flex; justify-content:space-between; align-items:center; border-left:4px solid #EB3C7D;">
+                    <span style="font-family:'Montserrat',sans-serif; font-weight:800; font-size:11px;">VALOR TOTAL TRABAJO (IVA INC.)</span>
+                    <span style="font-family:'Montserrat',sans-serif; font-weight:800; font-size:15.5px; color:#FCD116;">${formatCOP(fin.grandTotalSale)}</span>
+                  </div>
+                </div>
+
+                <!-- Bloque Derecho: Resumen de Mano de Obra y Utilidad Bruta -->
+                <div style="background:#F4F6F9; border:1px solid #E2E8F0; border-radius:10px; padding:11px 14px; font-size:11px; display:flex; flex-direction:column; justify-content:space-between;">
+                  <div>
+                    <div style="font-family:'Montserrat',sans-serif; font-weight:800; font-size:10.5px; color:#13294B; text-transform:uppercase; margin-bottom:6px; border-bottom:1px solid #CBD5E1; padding-bottom:4px;">
+                      Consolidado de Rentabilidad y Utilidad Bruta
+                    </div>
+                    <div style="display:flex; justify-content:space-between; padding:3px 0; color:#475569;">
+                      <span>Mano de Obra Total (IVA inc.):</span>
+                      <strong style="color:#13294B;">${formatCOP(fin.laborTotalSale)}</strong>
+                    </div>
+                    <div style="display:flex; justify-content:space-between; padding:3px 0; color:#475569;">
+                      <span>Venta Repuestos (IVA inc.):</span>
+                      <strong style="color:#13294B;">${formatCOP(fin.partsTotalSale)}</strong>
+                    </div>
+                    <div style="display:flex; justify-content:space-between; padding:3px 0; color:#64748B;">
+                      <span>Costo Repuestos (IVA inc.):</span>
+                      <strong>- ${formatCOP(fin.partsTotalCost)}</strong>
+                    </div>
+                    <div style="display:flex; justify-content:space-between; padding:4px 0; margin-top:2px; border-top:1px dashed #CBD5E1; font-weight:700; color:${marginColor};">
+                      <span>Utilidad Bruta Venta Repuestos (${marginPctStr}):</span>
+                      <span>${formatCOP(fin.partsProfit)}</span>
+                    </div>
+                  </div>
+                  <div style="background:${marginColor}; color:#FFFFFF; border-radius:8px; padding:8px 12px; margin-top:8px; display:flex; justify-content:space-between; align-items:center;">
+                    <span style="font-family:'Montserrat',sans-serif; font-weight:800; font-size:10.5px;">UTILIDAD BRUTA TOTAL (M.O. + REP.)</span>
+                    <span style="font-family:'Montserrat',sans-serif; font-weight:800; font-size:15.5px;">${formatCOP(fin.grandProfit)}</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        `;
+      }
+
       // --- 1. PLANTILLA PRESUPUESTO FORMAL AL CLIENTE (SIN COSTOS INTERNOS) ---
       function buildQuoteDocumentHTML(order) {
         const fin = computeOrderFinancials(order);
@@ -3859,6 +4115,12 @@
         if (docType === 'order') {
           checks.push(`Orden ${order.orderNumber} y placa verificadas`);
           checks.push(`Total consolidado (${formatCOP(fin.grandTotalSale)})`);
+        } else if (docType === 'admin') {
+          checks.push(`Informe administrativo en 1 hoja (${order.orderNumber})`);
+          checks.push(`Utilidad bruta repuestos: ${formatCOP(fin.partsProfit)} (${fin.partsMarginPct !== null ? fin.partsMarginPct.toFixed(1) + '%' : '—'})`);
+          if (fin.isMarginAlert) {
+            warnings.push(`Margen bruto de repuestos (${fin.partsMarginPct.toFixed(1)}%) está por debajo del 20%`);
+          }
         } else if (docType === 'quote') {
           if (fin.activeParts.length === 0 && fin.activeLabor.length === 0) {
             warnings.push('No hay repuestos ni mano de obra activos en la cotización');
@@ -3898,6 +4160,21 @@
             whatsappText: waMsg,
             whatsappLabel: 'Enviar por WhatsApp',
             enableNativeShare: true
+          };
+        }
+
+        if (docType === 'admin') {
+          return {
+            type: 'admin',
+            orderId: order.id,
+            title: `Informe Administrativo · ${order.orderNumber} (${plateToken})`,
+            filename: `Informe_Administrativo_TuMecanico_${otToken}_${plateToken}.pdf`,
+            html: buildAdminReportDocumentHTML(order),
+            whatsappUrl: '',
+            whatsappText: '',
+            whatsappLabel: '',
+            hideWhatsApp: true,
+            enableNativeShare: false
           };
         }
 
@@ -3956,11 +4233,21 @@
         const titleEl = document.getElementById('pdfModalTitle');
         const viewport = document.getElementById('previewDocumentViewport');
         const valBanner = document.getElementById('pdfValidationBanner');
+        const waBtn = document.getElementById('btnModalWhatsApp');
         const waLabel = document.getElementById('btnModalWhatsAppLabel');
         const shareBtn = document.getElementById('btnModalShareNative');
         const fallbackBar = document.getElementById('pdfFallbackDownloadBar');
 
         if (titleEl) titleEl.textContent = config.title;
+        if (waBtn) {
+          if (config.hideWhatsApp) {
+            waBtn.classList.add('hidden');
+            waBtn.classList.remove('inline-flex');
+          } else {
+            waBtn.classList.remove('hidden');
+            waBtn.classList.add('inline-flex');
+          }
+        }
         if (waLabel) waLabel.textContent = config.whatsappLabel;
         if (viewport) viewport.innerHTML = config.html;
         if (fallbackBar) fallbackBar.classList.add('hidden');
